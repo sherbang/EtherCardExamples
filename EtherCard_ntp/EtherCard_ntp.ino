@@ -3,7 +3,6 @@
  * With extra bits for nanode
  */
 
-#define NANODE
 #define DEBUG
 
 #include <avr/pgmspace.h>
@@ -33,17 +32,16 @@ static int currentTimeserver = 0;
 // Find list of servers at http://support.ntp.org/bin/view/Servers/StratumTwoTimeServers
 // Please observe server restrictions with regard to access to these servers.
 // This number should match how many ntp time server strings we have
-#define NUM_TIMESERVERS 5
+#define NUM_TIMESERVERS 4
 
 // Create an entry for each timeserver to use
-prog_char ntp0[] PROGMEM = "ntp2d.mcc.ac.uk";
-prog_char ntp1[] PROGMEM = "ntp2c.mcc.ac.uk";
-prog_char ntp2[] PROGMEM = "ntp.exnet.com";
-prog_char ntp3[] PROGMEM = "ntp.cis.strath.ac.uk";
-prog_char ntp4[] PROGMEM = "clock01.mnuk01.burstnet.eu";
+prog_char ntp0[] PROGMEM = "0.us.pool.ntp.org";
+prog_char ntp1[] PROGMEM = "1.us.pool.ntp.org";
+prog_char ntp2[] PROGMEM = "2.us.pool.ntp.org";
+prog_char ntp3[] PROGMEM = "3.us.pool.ntp.org";
 
 // Now define another array in PROGMEM for the above strings
-prog_char *ntpList[] PROGMEM = { ntp0, ntp1, ntp2, ntp3, ntp4 };
+prog_char *ntpList[] PROGMEM = { ntp0, ntp1, ntp2, ntp3 };
   
 // Packet buffer, must be big enough to packet and payload
 #define BUFFER_SIZE 550
