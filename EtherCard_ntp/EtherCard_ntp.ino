@@ -7,9 +7,20 @@
 
 #include <avr/pgmspace.h>
 #include <EtherCard.h>
+
 #ifdef NANODE
 #include <NanodeMAC.h>
 #endif
+
+/* Display driver */
+#include "TM1637.h"
+
+#define CLK 2//pins definitions for TM1637 and can be changed to other ports    
+#define DIO 3
+TM1637 tm1637(CLK,DIO);
+
+/* time storage for TM1637 */
+int8_t TimeDisp[] = {0x00,0x00,0x00,0x00};
 
 // Jan 1 
 #define SECS_YR_1900_2000  (3155673600UL)
@@ -124,6 +135,14 @@ uint8_t gmtime(const uint32_t time,char *day, char *clock)
     i++;
   }
   dstr[3]='\0';
+  
+  // integer time
+  TimeDisp[0] = tm_hour / 10;
+  TimeDisp[1] = tm_hour % 10;
+  TimeDisp[2] = tm_min / 10;
+  TimeDisp[3] = tm_min % 10;
+  
+  // String date/time
   sprintf_P(day,PSTR("%s %u-%02u-%02u"),dstr,tm_year,tm_mon+1,dayno + 1);
   sprintf_P(clock,PSTR("%02u:%02u:%02u"),tm_hour,tm_min,tm_sec);
   return(tm_min);
@@ -133,6 +152,9 @@ uint8_t gmtime(const uint32_t time,char *day, char *clock)
 void setup(){
   Serial.begin(19200);
   Serial.println( F("EtherCard/Nanode NTP Client" ) );
+  
+  tm1637.set();
+  tm1637.init();
   
   currentTimeserver = 0;
 
@@ -202,6 +224,10 @@ void loop(){
       }
       if( ++currentTimeserver >= NUM_TIMESERVERS )
         currentTimeserver = 0; 
+        
+        
+      // Update LED display
+      tm1637.display(TimeDisp);
     }
 
 }
