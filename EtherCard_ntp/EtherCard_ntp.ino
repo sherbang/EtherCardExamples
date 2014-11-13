@@ -13,14 +13,15 @@
 #endif
 
 /* Display driver */
-#include "TM1637.h"
+#include <TM1637Display.h>
 
-#define CLK 2//pins definitions for TM1637 and can be changed to other ports    
-#define DIO 3
-TM1637 tm1637(CLK,DIO);
+#define CLK 3//pins definitions for TM1637 and can be changed to other ports
+#define DIO 4
+TM1637Display tm1637(CLK,DIO);
 
-/* time storage for TM1637 */
-int8_t TimeDisp[] = {0x00,0x00,0x00,0x00};
+#define ETH_CS 10 // CS pin for ethernet module
+
+bool colonOn = false;
 
 // Jan 1 
 #define SECS_YR_1900_2000  (3155673600UL)
@@ -136,11 +137,8 @@ uint8_t gmtime(const uint32_t time,char *day, char *clock)
   }
   dstr[3]='\0';
   
-  // integer time
-  TimeDisp[0] = tm_hour / 10;
-  TimeDisp[1] = tm_hour % 10;
-  TimeDisp[2] = tm_min / 10;
-  TimeDisp[3] = tm_min % 10;
+  //Update LEDs
+  displayTime(tm_hour, tm_min);
   
   // String date/time
   sprintf_P(day,PSTR("%s %u-%02u-%02u"),dstr,tm_year,tm_mon+1,dayno + 1);
@@ -148,17 +146,36 @@ uint8_t gmtime(const uint32_t time,char *day, char *clock)
   return(tm_min);
 }
 
+void displayTime(uint8_t tm_hour, uint8_t tm_min){
+  uint8_t colon = 0b10000000;
+
+  //clear display
+  uint8_t data[] = {0x0, 0x0, 0x0, 0x0};
+  if (tm_hour > 9){
+      data[0] = tm1637.encodeDigit(tm_hour/10);
+  }
+  data[1] = tm1637.encodeDigit(tm_hour%10);
+  data[2] = tm1637.encodeDigit(tm_min/10);
+  data[3] = tm1637.encodeDigit(tm_min%10);
+
+  //add colon
+  if (colonOn){
+      data[1] = data[1] | colon;
+  }
+  colonOn = !colonOn;
+
+  tm1637.setSegments(data);
+}
 
 void setup(){
+  tm1637.setBrightness(0x0f);
+
   Serial.begin(19200);
   Serial.println( F("EtherCard/Nanode NTP Client" ) );
   
-  tm1637.set();
-  tm1637.init();
-  
   currentTimeserver = 0;
 
-  uint8_t rev = ether.begin(sizeof Ethernet::buffer, mymac);
+  uint8_t rev = ether.begin(sizeof Ethernet::buffer, mymac, ETH_CS);
   Serial.print( F("\nENC28J60 Revision ") );
   Serial.println( rev, DEC );
   if ( rev == 0) 
@@ -224,10 +241,6 @@ void loop(){
       }
       if( ++currentTimeserver >= NUM_TIMESERVERS )
         currentTimeserver = 0; 
-        
-        
-      // Update LED display
-      tm1637.display(TimeDisp);
     }
 
 }
