@@ -8,10 +8,6 @@
 #include <avr/pgmspace.h>
 #include <EtherCard.h>
 
-#ifdef NANODE
-#include <NanodeMAC.h>
-#endif
-
 /* Display driver */
 #include <TM1637Display.h>
 
@@ -26,11 +22,7 @@ bool colonOn = false;
 // Jan 1 
 #define SECS_YR_1900_2000  (3155673600UL)
 
-#ifdef NANODE
-static uint8_t mymac[6] = { 0,0,0,0,0,0 };
-#else
 static uint8_t mymac[6] = { 0x54,0x55,0x58,0x10,0x00,0x25};
-#endif
 
 // IP and netmask allocated by DHCP
 static uint8_t myip[4] = { 0,0,0,0 };
@@ -59,10 +51,6 @@ const prog_char *ntpList[] = { ntp0, ntp1, ntp2, ntp3 };
 #define BUFFER_SIZE 550
 byte Ethernet::buffer[BUFFER_SIZE];
 uint8_t clientPort = 123;
-
-#ifdef NANODE
-NanodeMAC mac( mymac );
-#endif
 
 // The next part is to deal with converting time received from NTP servers
 // to a value that can be displayed. This code was taken from somewhere that
