@@ -5,14 +5,20 @@
 
 #define DEBUG
 
+/* https://github.com/PaulStoffregen/Time.git */
 #include <Time.h>
+
+/* https://github.com/JChristensen/Timezone.git */
 #include <Timezone.h>
+
 #include <avr/pgmspace.h>
 
 /* Ethernet driver */
+/* https://github.com/jcw/ethercard.git */
 #include <EtherCard.h>
 
 /* Display driver */
+/* https://github.com/avishorp/TM1637.git */
 #include <TM1637Display.h>
 
 #define CLK 3//pins definitions for TM1637 and can be changed to other ports
@@ -48,7 +54,7 @@ const prog_char ntp3[] PROGMEM = "3.us.pool.ntp.org";
 
 // Now define another array in PROGMEM for the above strings
 const prog_char *ntpList[] = { ntp0, ntp1, ntp2, ntp3 };
-  
+
 // Packet buffer, must be big enough to packet and payload
 #define BUFFER_SIZE 550
 byte Ethernet::buffer[BUFFER_SIZE];
