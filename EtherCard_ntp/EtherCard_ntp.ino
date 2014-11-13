@@ -225,6 +225,13 @@ void loop(){
     }
   }
 
+  if ( lastUpdate != 0 && timeStatus() == timeNotSet) {
+      // If the first NTP request fails, we don't want to wait 5 minutes to try again
+      if (millis() - lastUpdate > 2000){
+        getNtpTime();
+      }
+  }
+
   if (timeStatus() != timeNotSet) {
       if (now() != prevDisplay) { //Update only if time has changed
           prevDisplay = now();
