@@ -6,6 +6,7 @@
 #define DEBUG
 
 #include <Time.h>
+#include <Timezone.h>
 #include <avr/pgmspace.h>
 
 /* Ethernet driver */
@@ -53,10 +54,15 @@ const prog_char *ntpList[] = { ntp0, ntp1, ntp2, ntp3 };
 byte Ethernet::buffer[BUFFER_SIZE];
 uint8_t clientPort = 123;
 
-bool colonOn = false;
-uint32_t lastUpdate = 0;
-time_t prevDisplay = 0;
-time_t timeLong;
+bool colonOn = false;    // last colon status (on/off)
+uint32_t lastUpdate = 0; // last request sent to NTP (millis)
+time_t prevDisplay = 0;  // last time display was updated (UTC)
+time_t timeLong;         // NTP time variable (Seconds since 1/1/1900)
+time_t localTime;        // Local time (unix time)
+
+TimeChangeRule usEDT = {"EDT", Second, Sun, Mar, 2, -240};  //UTC - 4 hours
+TimeChangeRule usEST = {"EST", First, Sun, Nov, 2, -300};   //UTC - 5 hours
+Timezone usEastern(usEDT, usEST);
 
 // Number of seconds between 1-Jan-1900 and 1-Jan-1970, unix time starts 1970
 // and ntp time starts 1900.
@@ -64,8 +70,11 @@ time_t timeLong;
 
 void displayTime(){
   uint8_t colon = 0b10000000;
-  int tm_hour = hour();
-  int tm_min = minute();
+  int tm_hour;
+  int tm_min;
+
+  tm_hour = hourFormat12(localTime);
+  tm_min = minute(localTime);
 
   //clear display
   uint8_t data[] = {0x0, 0x0, 0x0, 0x0};
@@ -86,7 +95,7 @@ void displayTime(){
 }
 
 void setup(){
-  tm1637.setBrightness(0x0f);
+  tm1637.setBrightness(0x08); //0x08 seems to be the minimum I can get away with
 
   Serial.begin(19200);
   Serial.println( F("EtherCard/Nanode NTP Client" ) );
@@ -151,7 +160,7 @@ void printDigits(int digits){
 }
 
 void serialPrintTime(){
-  Serial.print(hour());
+  Serial.print(hourFormat12());
   printDigits(minute());
   printDigits(second());
   Serial.print(" ");
@@ -160,8 +169,23 @@ void serialPrintTime(){
   Serial.print(month());
   Serial.print(" ");
   Serial.print(year());
-  Serial.println();
+  Serial.println(" UTC");
 
+
+  Serial.print(hourFormat12(localTime));
+  printDigits(minute(localTime));
+  printDigits(second(localTime));
+  Serial.print(" ");
+  Serial.print(day(localTime));
+  Serial.print(" ");
+  Serial.print(month(localTime));
+  Serial.print(" ");
+  Serial.print(year(localTime));
+  if (usEastern.locIsDST(localTime)) {
+    Serial.println(" EDT");
+  }else{
+    Serial.println(" EST");
+  }
 }
 
 void loop(){
@@ -198,8 +222,9 @@ void loop(){
   if (timeStatus() != timeNotSet) {
       if (now() != prevDisplay) { //Update only if time has changed
           prevDisplay = now();
-          serialPrintTime();
+          localTime = usEastern.toLocal(now());
           displayTime();
+          serialPrintTime();
       }
   }
 }
