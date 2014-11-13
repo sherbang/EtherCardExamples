@@ -46,13 +46,13 @@ static int currentTimeserver = 0;
 #define NUM_TIMESERVERS 4
 
 // Create an entry for each timeserver to use
-prog_char ntp0[] PROGMEM = "0.us.pool.ntp.org";
-prog_char ntp1[] PROGMEM = "1.us.pool.ntp.org";
-prog_char ntp2[] PROGMEM = "2.us.pool.ntp.org";
-prog_char ntp3[] PROGMEM = "3.us.pool.ntp.org";
+const prog_char ntp0[] PROGMEM = "0.us.pool.ntp.org";
+const prog_char ntp1[] PROGMEM = "1.us.pool.ntp.org";
+const prog_char ntp2[] PROGMEM = "2.us.pool.ntp.org";
+const prog_char ntp3[] PROGMEM = "3.us.pool.ntp.org";
 
 // Now define another array in PROGMEM for the above strings
-prog_char *ntpList[] PROGMEM = { ntp0, ntp1, ntp2, ntp3 };
+const prog_char *ntpList[] = { ntp0, ntp1, ntp2, ntp3 };
   
 // Packet buffer, must be big enough to packet and payload
 #define BUFFER_SIZE 550
@@ -169,7 +169,7 @@ void setup(){
     Serial.println( F( "DHCP failed" ));
   
   ether.printIp("My IP: ", ether.myip);
-  ether.printIp("Netmask: ", ether.mymask);
+  ether.printIp("Netmask: ", ether.netmask);
   ether.printIp("GW IP: ", ether.gwip);
   ether.printIp("DNS IP: ", ether.dnsip);
 
@@ -210,7 +210,7 @@ void loop(){
       Serial.print( F("TimeSvr: " ) );
       Serial.println( currentTimeserver, DEC );
 
-      if (!ether.dnsLookup( (char*)pgm_read_word(&(ntpList[currentTimeserver])) )) {
+      if (!ether.dnsLookup( ntpList[currentTimeserver] )) {
         Serial.println( F("DNS failed" ));
       } else {
         ether.printIp("SRV: ", ether.hisip);
