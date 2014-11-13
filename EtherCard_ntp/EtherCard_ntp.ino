@@ -27,8 +27,10 @@ TM1637Display tm1637(CLK,DIO);
 
 #define ETH_CS 10 // CS pin for ethernet module
 
-// Jan 1 
-#define SECS_YR_1900_2000  (3155673600UL)
+
+// Define some byte codes for the 7seg display
+static uint8_t SEVSEG_DATA_1200[] = { 0b00000110,0b11011011,0b00111111,0b00111111 };
+static uint8_t SEVSEG_DATA_NULL[] = { 0x0, 0x0, 0x0, 0x0 };
 
 static uint8_t mymac[6] = { 0x54,0x55,0x58,0x10,0x00,0x25};
 
@@ -84,6 +86,7 @@ void displayTime(){
 
   //clear display
   uint8_t data[] = {0x0, 0x0, 0x0, 0x0};
+
   if (tm_hour > 9){
       data[0] = tm1637.encodeDigit(tm_hour/10);
   }
@@ -98,6 +101,16 @@ void displayTime(){
   colonOn = !colonOn;
 
   tm1637.setSegments(data);
+}
+
+void flashTwelve(){
+  if (colonOn){
+      tm1637.setSegments(SEVSEG_DATA_1200);
+  }else{
+      tm1637.setSegments(SEVSEG_DATA_NULL);
+  }
+
+  colonOn = !colonOn;
 }
 
 void setup(){
@@ -127,6 +140,18 @@ void setup(){
 }
 
 /*
+   Return false if IP is 0.0.0.0
+ */
+bool have_ip(){
+  for (int i=0; i<4; i++){
+    if (ether.myip[i] != 0) return true;
+  }
+
+  Serial.println("no ip");
+  return false;
+}
+
+/*
    Send an NTP request.
 
    Always return 0.
@@ -138,6 +163,9 @@ time_t getNtpTime(){
   lastUpdate = millis();
   Serial.print( F("TimeSvr: " ) );
   Serial.println( currentTimeserver, DEC );
+
+  // Don't bother with the rest if there's no local IP
+  if (!have_ip()) return 0;
 
   if (!ether.dnsLookup( ntpList[currentTimeserver] )) {
     Serial.println( F("DNS failed" ));
@@ -196,8 +224,6 @@ void serialPrintTime(){
 
 void loop(){
   uint16_t dat_p;
-  char day[22];
-  char clock[22];
   int plen = 0;
 
   // Main processing loop now we have our addresses
@@ -239,9 +265,13 @@ void loop(){
           displayTime();
           serialPrintTime();
       }
+  } else {
+    //Flashing 12:00  :-)
+    if (millis() >  (prevDisplay + 1000)) {
+      flashTwelve();
+      prevDisplay = millis();
+    }
   }
 }
 
 // End
-
-
