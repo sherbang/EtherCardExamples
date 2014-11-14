@@ -59,6 +59,7 @@ bool colonOn = false;    // last colon status (on/off)
 uint32_t lastUpdate = 0; // last request sent to NTP (millis)
 time_t prevDisplay = 0;  // last time display was updated (UTC)
 time_t ntpTime = 0;      // NTP time temp variable (unix time)
+time_t lastSync = 0;     // NTP last successful sync (unix time)
 time_t localTime;        // Local time (unix time)
 
 TimeChangeRule usEDT = {"EDT", Second, Sun, Mar, 2, -240};  //UTC - 4 hours
@@ -71,6 +72,7 @@ Timezone usEastern(usEDT, usEST);
 
 void displayTime(){
   uint8_t colon = 0b10000000;
+  uint8_t lower_left_segment = 0b00010000;
   int tm_hour;
   int tm_min;
 
@@ -89,7 +91,13 @@ void displayTime(){
 
   //add colon
   if (colonOn){
-      data[1] = data[1] | colon;
+      data[1] |= colon;
+
+      if (now() - lastSync > 43200){
+        // Haven't syned with NTP in 12 hours
+        // Flash lower-left segment as a warning
+        data[0] |= lower_left_segment;
+      }
   }
   colonOn = !colonOn;
 
@@ -241,6 +249,7 @@ void loop(){
         }else{
           ntpTime -= GETTIMEOFDAY_TO_NTP_OFFSET;
           setTime(ntpTime);
+          lastSync = ntpTime;
         }
       }
     }
