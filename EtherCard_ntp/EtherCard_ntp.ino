@@ -113,32 +113,6 @@ void flashTwelve(){
   colonOn = !colonOn;
 }
 
-void setup(){
-  tm1637.setBrightness(0x08); //0x08 seems to be the minimum I can get away with
-
-  Serial.begin(19200);
-  Serial.println( F("EtherCard/Nanode NTP Client" ) );
-
-  currentTimeserver = 0;
-
-  uint8_t rev = ether.begin(sizeof Ethernet::buffer, mymac, ETH_CS);
-  Serial.print( F("\nENC28J60 Revision ") );
-  Serial.println( rev, DEC );
-  if ( rev == 0) 
-    Serial.println( F( "Failed to access Ethernet controller" ) );
-
-  Serial.println( F( "Setting up DHCP" ));
-  if (!ether.dhcpSetup())
-    Serial.println( F( "DHCP failed" ));
-
-  ether.printIp("My IP: ", ether.myip);
-  ether.printIp("Netmask: ", ether.netmask);
-  ether.printIp("GW IP: ", ether.gwip);
-  ether.printIp("DNS IP: ", ether.dnsip);
-
-  setSyncProvider(getNtpTime);
-}
-
 /*
    Return false if IP is 0.0.0.0
  */
@@ -220,6 +194,32 @@ void serialPrintTime(){
   }else{
     Serial.println(" EST");
   }
+}
+
+void setup(){
+  tm1637.setBrightness(0x08); //0x08 seems to be the minimum I can get away with
+
+  Serial.begin(19200);
+  Serial.println( F("EtherCard/Nanode NTP Client" ) );
+
+  currentTimeserver = 0;
+
+  uint8_t rev = ether.begin(sizeof Ethernet::buffer, mymac, ETH_CS);
+  Serial.print( F("\nENC28J60 Revision ") );
+  Serial.println( rev, DEC );
+  if ( rev == 0) 
+    Serial.println( F( "Failed to access Ethernet controller" ) );
+
+  Serial.println( F( "Setting up DHCP" ));
+  if (!ether.dhcpSetup())
+    Serial.println( F( "DHCP failed" ));
+
+  ether.printIp("My IP: ", ether.myip);
+  ether.printIp("Netmask: ", ether.netmask);
+  ether.printIp("GW IP: ", ether.gwip);
+  ether.printIp("DNS IP: ", ether.dnsip);
+
+  setSyncProvider(getNtpTime);
 }
 
 void loop(){
