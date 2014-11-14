@@ -1,6 +1,5 @@
 /*
  * Arduino ENC28J60 EtherCard NTP client demo
- * With extra bits for nanode
  */
 
 #define DEBUG
@@ -18,7 +17,8 @@
 #include <EtherCard.h>
 
 /* Display driver */
-/* https://github.com/avishorp/TM1637.git */
+/* https://github.com/avishorp/TM1637.git
+   http://forum.arduino.cc/index.php?action=dlattach;topic=271238.0;attach=98948 */
 #include <TM1637Display.h>
 
 #define CLK 3//pins definitions for TM1637 and can be changed to other ports
@@ -27,19 +27,11 @@ TM1637Display tm1637(CLK,DIO);
 
 #define ETH_CS 10 // CS pin for ethernet module
 
-
 // Define some byte codes for the 7seg display
 static uint8_t SEVSEG_DATA_1200[] = { 0b00000110,0b11011011,0b00111111,0b00111111 };
 static uint8_t SEVSEG_DATA_NULL[] = { 0x0, 0x0, 0x0, 0x0 };
 
 static uint8_t mymac[6] = { 0x54,0x55,0x58,0x10,0x00,0x25};
-
-// IP and netmask allocated by DHCP
-static uint8_t myip[4] = { 0,0,0,0 };
-static uint8_t mynetmask[4] = { 0,0,0,0 };
-static uint8_t gwip[4] = { 0,0,0,0 };
-static uint8_t dnsip[4] = { 0,0,0,0 };
-static uint8_t dhcpsvrip[4] = { 0,0,0,0 };
 
 static int currentTimeserver = 0;
 
@@ -65,7 +57,7 @@ uint8_t clientPort = 123;
 bool colonOn = false;    // last colon status (on/off)
 uint32_t lastUpdate = 0; // last request sent to NTP (millis)
 time_t prevDisplay = 0;  // last time display was updated (UTC)
-time_t timeLong;         // NTP time variable (Seconds since 1/1/1900)
+time_t ntpTime = 0;      // NTP time temp variable (unix time)
 time_t localTime;        // Local time (unix time)
 
 TimeChangeRule usEDT = {"EDT", Second, Sun, Mar, 2, -240};  //UTC - 4 hours
@@ -159,7 +151,7 @@ time_t getNtpTime(){
   return 0;
 }
 
-void printDigits(int digits){
+void serialPrintDigits(int digits){
   // utility for digital clock display: prints preceding colon and leading 0
   Serial.print(":");
   if(digits < 10)
@@ -169,8 +161,8 @@ void printDigits(int digits){
 
 void serialPrintTime(){
   Serial.print(hourFormat12());
-  printDigits(minute());
-  printDigits(second());
+  serialPrintDigits(minute());
+  serialPrintDigits(second());
   Serial.print(" ");
   Serial.print(day());
   Serial.print(" ");
@@ -181,8 +173,8 @@ void serialPrintTime(){
 
 
   Serial.print(hourFormat12(localTime));
-  printDigits(minute(localTime));
-  printDigits(second(localTime));
+  serialPrintDigits(minute(localTime));
+  serialPrintDigits(second(localTime));
   Serial.print(" ");
   Serial.print(day(localTime));
   Serial.print(" ");
@@ -198,16 +190,17 @@ void serialPrintTime(){
 
 void setup(){
   tm1637.setBrightness(0x08); //0x08 seems to be the minimum I can get away with
+  tm1637.setSegments(SEVSEG_DATA_NULL); // Reset display
 
   Serial.begin(19200);
-  Serial.println( F("EtherCard/Nanode NTP Client" ) );
+  Serial.println( F("EtherCard NTP Client" ) );
 
   currentTimeserver = 0;
 
   uint8_t rev = ether.begin(sizeof Ethernet::buffer, mymac, ETH_CS);
   Serial.print( F("\nENC28J60 Revision ") );
   Serial.println( rev, DEC );
-  if ( rev == 0) 
+  if ( rev == 0)
     Serial.println( F( "Failed to access Ethernet controller" ) );
 
   Serial.println( F( "Setting up DHCP" ));
@@ -233,19 +226,19 @@ void loop(){
 
   // Has unprocessed packet response
   if (plen > 0) {
-    timeLong = 0L;
+    ntpTime = 0L;
 
-    if (ether.ntpProcessAnswer(&timeLong,clientPort)) {
+    if (ether.ntpProcessAnswer(&ntpTime,clientPort)) {
       Serial.print( F( "Time:" ));
-      Serial.println(timeLong); // secs since year 1900
+      Serial.println(ntpTime); // secs since year 1900
 
-      if (timeLong) {
+      if (ntpTime) {
         if (millis() - lastUpdate > 1500){
           //If the response took too long to come, then skip it
           Serial.print( "Stale NTP response");
         }else{
-          timeLong -= GETTIMEOFDAY_TO_NTP_OFFSET;
-          setTime(timeLong);
+          ntpTime -= GETTIMEOFDAY_TO_NTP_OFFSET;
+          setTime(ntpTime);
         }
       }
     }
