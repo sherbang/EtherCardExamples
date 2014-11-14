@@ -28,6 +28,7 @@ TM1637Display tm1637(CLK,DIO);
 #define ETH_CS 10 // CS pin for ethernet module
 
 // Define some byte codes for the 7seg display
+static uint8_t SEVSEG_DATA_DHCP[] = { 0b01011110,0b01110110,0b00111001,0b01110011 };
 static uint8_t SEVSEG_DATA_1200[] = { 0b00000110,0b11011011,0b00111111,0b00111111 };
 static uint8_t SEVSEG_DATA_NULL[] = { 0x0, 0x0, 0x0, 0x0 };
 
@@ -204,6 +205,7 @@ void setup(){
     Serial.println( F( "Failed to access Ethernet controller" ) );
 
   Serial.println( F( "Setting up DHCP" ));
+  tm1637.setSegments(SEVSEG_DATA_DHCP);
   if (!ether.dhcpSetup())
     Serial.println( F( "DHCP failed" ));
 
